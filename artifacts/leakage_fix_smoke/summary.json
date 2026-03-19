@@ -1,0 +1,53 @@
+{
+  "best_val": {
+    "auc": 0.5,
+    "aupr": 0.5
+  },
+  "test_metrics": {
+    "auc": 0.5,
+    "aupr": 0.5
+  },
+  "leakage_fix": {
+    "status": "enabled",
+    "train_only_relations": [
+      "drug__drugsim_gip__drug",
+      "drug__drugsim_drsie__drug",
+      "drug__treats__disease_train"
+    ],
+    "drug_sim_top_k": 5,
+    "note": "GIP and DRSIE are rebuilt from train-only drug-disease edges after splitting."
+  },
+  "drug_sim_attention": [
+    0.5844357013702393,
+    0.2604663670063019,
+    0.15509791672229767
+  ],
+  "disease_sim_attention": [
+    0.2277076095342636,
+    0.4377555549144745,
+    0.3345367908477783
+  ],
+  "drug_local_attention": [
+    0.7188115119934082,
+    0.281188428401947
+  ],
+  "disease_local_attention": [
+    0.683059811592102,
+    0.3169402778148651
+  ],
+  "drug_global_attention": [
+    1.0
+  ],
+  "disease_global_attention": [
+    0.5062395334243774,
+    0.49376049637794495
+  ],
+  "num_train_pos": 534,
+  "num_val_pos": 114,
+  "num_test_pos": 115,
+  "device": "cpu",
+  "metapath_relations": [
+    "drug__meta_dgd__disease",
+    "disease__meta_dgd__disease"
+  ]
+}
