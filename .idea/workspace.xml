@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d20e77ac-8a9b-4b8a-9309-05dd4bf87652" name="更改" comment="首次提交">
+    <list default="true" id="d20e77ac-8a9b-4b8a-9309-05dd4bf87652" name="更改" comment="药物预测">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_model.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,7 +92,23 @@
       <option name="project" value="LOCAL" />
       <updated>1773928181666</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="修改数据泄露问题">
+      <option name="closed" value="true" />
+      <created>1773932423954</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1773932423954</updated>
+    </task>
+    <task id="LOCAL-00006" summary="药物预测">
+      <option name="closed" value="true" />
+      <created>1773935001447</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1773935001447</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -114,6 +127,8 @@
       <path value="$PROJECT_DIR$/data/other/biobert" />
     </ignored-roots>
     <MESSAGE value="首次提交" />
-    <option name="LAST_COMMIT_MESSAGE" value="首次提交" />
+    <MESSAGE value="修改数据泄露问题" />
+    <MESSAGE value="药物预测" />
+    <option name="LAST_COMMIT_MESSAGE" value="药物预测" />
   </component>
 </project>
