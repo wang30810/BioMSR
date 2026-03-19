@@ -1,0 +1,43 @@
+{
+  "best_val": {
+    "auc": 0.5,
+    "aupr": 0.5
+  },
+  "test_metrics": {
+    "auc": 0.5,
+    "aupr": 0.5
+  },
+  "drug_sim_attention": [
+    0.5556716918945312,
+    0.3022345304489136,
+    0.14209380745887756
+  ],
+  "disease_sim_attention": [
+    0.2258262187242508,
+    0.4430653750896454,
+    0.3311083912849426
+  ],
+  "drug_local_attention": [
+    0.7209622263908386,
+    0.27903780341148376
+  ],
+  "disease_local_attention": [
+    0.6828681230545044,
+    0.3171318769454956
+  ],
+  "drug_global_attention": [
+    1.0
+  ],
+  "disease_global_attention": [
+    0.506209671497345,
+    0.49379026889801025
+  ],
+  "num_train_pos": 534,
+  "num_val_pos": 114,
+  "num_test_pos": 115,
+  "device": "cpu",
+  "metapath_relations": [
+    "drug__meta_dgd__disease",
+    "disease__meta_dgd__disease"
+  ]
+}

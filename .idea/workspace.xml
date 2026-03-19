@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="d20e77ac-8a9b-4b8a-9309-05dd4bf87652" name="更改" comment="首次提交">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Help.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test/history.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test/model.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test/summary.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test_mainflow/history.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test_mainflow/model.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test_mainflow/summary.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test_v2/history.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test_v2/model.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/artifacts/smoke_test_v2/summary.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/check.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/CTD/CTD_chemicals_diseases.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/CTD/CTD_curated_genes_diseases.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/CTD/CTD_diseases.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/final/final_graph_data.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/id_mapping.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/interim/drug_catalog.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/interim/target_disease_ids.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/biobert/config.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/biobert/flax_model.msgpack" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/biobert/pytorch_model.bin" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/biobert/special_tokens_map.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/biobert/tokenizer_config.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/biobert/vocab.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/final_hetero_data_strict.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/full database-2.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/gene2vec_dim_200_iter_9_w2v.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/gene_info" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/other/phenotype.hpoa" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/DiSimNet_G.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/DiSimNet_H.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/DiSimNet_O.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/DrugSim_DRSIE.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/DrugSim_GIP.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/DrugSim_Morgan.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/disease_features_dict.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/disease_gene_edges.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/disease_texts.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/disease_texts_meta.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/drug_disease_edges.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/drug_features_dict.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/dti_edges.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/processed/gene_features_dict.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reference_graph_builder/final_hetero_data_raw.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reference_graph_builder/processed.zip" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reports/discovered_sources.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reports/disease_encoder_report.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reports/reference_processed_report.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reports/reference_pt_report.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reports/run_summary.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/reports/validation_report.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/msrhgnn_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/others/Help.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/others/check.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/others/data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/others/data1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/others/final_hetero_data_strict.pt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pipeline_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/run.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/train_model.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="DONT_SYNC" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;muqi794&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/muqi794/MSRHGNN.git&quot;,
+    &quot;accountId&quot;: &quot;66b714ea-2982-4889-99fc-f5f858d90306&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="3B99ezNDR1Lan6wkx7htFcZdHIB" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;promo.remoteSsh&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-1f77c24022e5-d902c0275401-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-252.26830.99" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="d20e77ac-8a9b-4b8a-9309-05dd4bf87652" name="更改" comment="" />
+      <created>1773890517736</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1773890517736</updated>
+    </task>
+    <task id="LOCAL-00001" summary="首次提交">
+      <option name="closed" value="true" />
+      <created>1773925963454</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1773925963454</updated>
+    </task>
+    <task id="LOCAL-00002" summary="首次提交">
+      <option name="closed" value="true" />
+      <created>1773926866664</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1773926866664</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/data/other/biobert" />
+    </ignored-roots>
+    <MESSAGE value="首次提交" />
+    <option name="LAST_COMMIT_MESSAGE" value="首次提交" />
+  </component>
+</project>
