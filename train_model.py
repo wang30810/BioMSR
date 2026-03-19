@@ -13,7 +13,14 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from msrhgnn_model import LOCAL_DD_TRAIN_RELATION, MultiViewMSRHGNN, build_metapath_relations
+from msrhgnn_model import (
+    LOCAL_DD_TRAIN_RELATION,
+    MultiViewMSRHGNN,
+    build_metapath_relations,
+)
+
+DRUGSIM_GIP_RELATION = "drug__drugsim_gip__drug"
+DRUGSIM_DRSIE_RELATION = "drug__drugsim_drsie__drug"
 
 
 def set_seed(seed: int) -> None:
@@ -88,6 +95,97 @@ def evaluate_scores(pos_logits: torch.Tensor, neg_logits: torch.Tensor) -> Dict[
     }
 
 
+def normalize_matrix(matrix: np.ndarray) -> np.ndarray:
+    if matrix.size == 0:
+        return matrix
+    matrix = np.nan_to_num(matrix.astype(float), nan=0.0, posinf=0.0, neginf=0.0)
+    min_v = float(matrix.min())
+    max_v = float(matrix.max())
+    if math.isclose(min_v, max_v):
+        return np.zeros_like(matrix)
+    return (matrix - min_v) / (max_v - min_v)
+
+
+def sparsify_top_k(matrix: np.ndarray, k: int = 5, symmetric: bool = True) -> np.ndarray:
+    n = matrix.shape[0]
+    sparse = np.zeros_like(matrix)
+    if n == 0:
+        return sparse
+    for i in range(n):
+        row = matrix[i].copy()
+        row[i] = -np.inf
+        idx = np.argpartition(row, -k)[-k:] if k < n else np.where(np.isfinite(row))[0]
+        idx = [j for j in idx if j != i and np.isfinite(row[j]) and row[j] > 0]
+        for j in idx:
+            sparse[i, j] = matrix[i, j]
+    if symmetric:
+        sparse = np.maximum(sparse, sparse.T)
+    np.fill_diagonal(sparse, 0.0)
+    return sparse
+
+
+def adjacency_to_edge_tensors(matrix: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
+    coords = np.argwhere(matrix > 0)
+    if coords.size == 0:
+        return torch.empty((2, 0), dtype=torch.long), torch.empty((0,), dtype=torch.float)
+    edge_index = torch.tensor(coords.T, dtype=torch.long)
+    edge_weight = torch.tensor(matrix[coords[:, 0], coords[:, 1]], dtype=torch.float)
+    return edge_index, edge_weight
+
+
+def build_train_only_gip_relation(
+    num_drugs: int,
+    num_diseases: int,
+    train_pairs: Sequence[Tuple[int, int]],
+    top_k: int,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    y = np.zeros((num_drugs, num_diseases), dtype=float)
+    for drug_idx, disease_idx in train_pairs:
+        y[int(drug_idx), int(disease_idx)] = 1.0
+    row_norm = np.sum(y**2, axis=1)
+    gamma = 1.0 / np.mean(row_norm[row_norm > 0]) if np.any(row_norm > 0) else 1.0
+    dist = ((y[:, None, :] - y[None, :, :]) ** 2).sum(axis=2)
+    sim = np.exp(-gamma * dist)
+    sim = normalize_matrix(sim)
+    sim = sparsify_top_k(sim, k=top_k, symmetric=True)
+    return adjacency_to_edge_tensors(sim)
+
+
+def build_train_only_drsie_relation(
+    num_drugs: int,
+    train_pairs: Sequence[Tuple[int, int]],
+    top_k: int,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    disease_sets: Dict[int, set[int]] = {}
+    disease_counts: Dict[int, int] = {}
+    for drug_idx, disease_idx in train_pairs:
+        disease_sets.setdefault(int(drug_idx), set()).add(int(disease_idx))
+        disease_counts[int(disease_idx)] = disease_counts.get(int(disease_idx), 0) + 1
+
+    sim = np.zeros((num_drugs, num_drugs), dtype=float)
+    total_drugs = max(1, num_drugs)
+    for i in range(num_drugs):
+        set_i = disease_sets.get(i, set())
+        for j in range(i, num_drugs):
+            set_j = disease_sets.get(j, set())
+            union = set_i | set_j
+            if not union:
+                score = 0.0
+            else:
+                common = set_i & set_j
+
+                def weight(did: int) -> float:
+                    return math.log(1.0 + total_drugs / max(1, disease_counts.get(int(did), 1)))
+
+                common_w = sum(weight(did) for did in common)
+                union_w = sum(weight(did) for did in union)
+                score = common_w / union_w if union_w else 0.0
+            sim[i, j] = sim[j, i] = score
+    sim = normalize_matrix(sim)
+    sim = sparsify_top_k(sim, k=top_k, symmetric=True)
+    return adjacency_to_edge_tensors(sim)
+
+
 def save_json(path: Path, payload: Dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -108,6 +206,7 @@ def main() -> None:
     parser.add_argument("--out-dir", type=str, default="artifacts/train_run")
     parser.add_argument("--eval-every", type=int, default=5)
     parser.add_argument("--meta-top-k", type=int, default=10)
+    parser.add_argument("--drug-sim-top-k", type=int, default=5)
     args = parser.parse_args()
 
     set_seed(args.seed)
@@ -127,20 +226,7 @@ def main() -> None:
         for k, v in relation_edges_cpu.items()
     }
 
-    meta_edges, meta_weights = build_metapath_relations(
-        relation_edges_cpu,
-        relation_weights_cpu,
-        num_drugs=len(graph["node_ids"]["drug"]),
-        num_diseases=len(graph["node_ids"]["disease"]),
-        top_k=args.meta_top_k,
-    )
-    relation_edges_cpu.update(meta_edges)
-    relation_weights_cpu.update(meta_weights)
-
-    relation_edges = {k: v.to(device) for k, v in relation_edges_cpu.items()}
-    relation_weights = {k: w.to(device) for k, w in relation_weights_cpu.items()}
-
-    positive_pairs = edge_tensor_to_pairs(relation_edges["drug__treats__disease"])
+    positive_pairs = edge_tensor_to_pairs(relation_edges_cpu["drug__treats__disease"])
     train_pairs, val_pairs, test_pairs = split_positive_edges(
         positive_pairs,
         train_ratio=args.train_ratio,
@@ -158,6 +244,35 @@ def main() -> None:
         rng,
         forbidden=set(val_neg),
     )
+
+    train_gip_edge_index, train_gip_edge_weight = build_train_only_gip_relation(
+        num_drugs=len(graph["node_ids"]["drug"]),
+        num_diseases=len(graph["node_ids"]["disease"]),
+        train_pairs=train_pairs,
+        top_k=args.drug_sim_top_k,
+    )
+    train_drsie_edge_index, train_drsie_edge_weight = build_train_only_drsie_relation(
+        num_drugs=len(graph["node_ids"]["drug"]),
+        train_pairs=train_pairs,
+        top_k=args.drug_sim_top_k,
+    )
+    relation_edges_cpu[DRUGSIM_GIP_RELATION] = train_gip_edge_index
+    relation_weights_cpu[DRUGSIM_GIP_RELATION] = train_gip_edge_weight
+    relation_edges_cpu[DRUGSIM_DRSIE_RELATION] = train_drsie_edge_index
+    relation_weights_cpu[DRUGSIM_DRSIE_RELATION] = train_drsie_edge_weight
+
+    meta_edges, meta_weights = build_metapath_relations(
+        relation_edges_cpu,
+        relation_weights_cpu,
+        num_drugs=len(graph["node_ids"]["drug"]),
+        num_diseases=len(graph["node_ids"]["disease"]),
+        top_k=args.meta_top_k,
+    )
+    relation_edges_cpu.update(meta_edges)
+    relation_weights_cpu.update(meta_weights)
+
+    relation_edges = {k: v.to(device) for k, v in relation_edges_cpu.items()}
+    relation_weights = {k: w.to(device) for k, w in relation_weights_cpu.items()}
 
     relation_edges[LOCAL_DD_TRAIN_RELATION] = pairs_to_tensor(train_pairs, device).t().contiguous() if train_pairs else torch.empty((2, 0), dtype=torch.long, device=device)
     relation_weights[LOCAL_DD_TRAIN_RELATION] = torch.ones((len(train_pairs),), dtype=torch.float, device=device)
@@ -257,6 +372,12 @@ def main() -> None:
     summary = {
         "best_val": best_state["metrics"],
         "test_metrics": test_metrics,
+        "leakage_fix": {
+            "status": "enabled",
+            "train_only_relations": [DRUGSIM_GIP_RELATION, DRUGSIM_DRSIE_RELATION, LOCAL_DD_TRAIN_RELATION],
+            "drug_sim_top_k": args.drug_sim_top_k,
+            "note": "GIP and DRSIE are rebuilt from train-only drug-disease edges after splitting.",
+        },
         "drug_sim_attention": aux["drug_sim_weights"],
         "disease_sim_attention": aux["disease_sim_weights"],
         "drug_local_attention": aux["drug_local_weights"],

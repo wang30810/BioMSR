@@ -19,10 +19,12 @@
 
 ## 2. 环境要求
 
-建议：
+建议（我使用的）：
 
-- Python 3.10 或 3.11
-- pip 最新版
+- Pytorch 2.0.0 ；
+- python 3.8；
+- ubuntu 20.04;
+- cuda 11.8;
 
 ---
 
@@ -30,70 +32,12 @@
 
 ### 3.1 创建虚拟环境
 
-#### Windows PowerShell
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-```
+按上面配置
 
-#### Linux / macOS
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-### 3.2 升级 pip
+### 3.2 安装项目依赖
 
 ```bash
-python -m pip install --upgrade pip
-```
-
-### 3.3 安装 PyTorch
-
-#### CPU 版本
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-```
-
-#### 如果你有 CUDA
-请按你本机 CUDA 版本去装对应的 PyTorch。  
-
-### 3.4 安装项目依赖
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3.5 单独确保这两个包装好
-
-因为主流程要读取：
-
-- `data/reference_graph_builder/final_hetero_data_raw.pt`
-
-所以必须确保：
-
-```bash
-pip install torch-geometric
-```
-
-如果你要启用 BioBERT 文本编码，而不是 `tfidf_svd` fallback，再安装：
-
-```bash
-pip install transformers
-```
-
-### 3.6 一套完整环境安装命令
-
-#### Windows PowerShell
-```bash
-cd E:\2023\校创2025\模型
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements.txt
-pip install torch-geometric
-pip install transformers
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ---
