@@ -1355,6 +1355,73 @@ def adjacency_to_edges(matrix: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
     return edge_index, edge_weight
 
 
+def summarize_graph_coverage(graph: Dict[str, Any]) -> Dict[str, Any]:
+    edge_index = graph.get("edge_index", {})
+    edge_counts = {
+        relation: int(edges.size(1)) if isinstance(edges, torch.Tensor) and edges.dim() == 2 else 0
+        for relation, edges in edge_index.items()
+    }
+
+    def has_relation(name: str) -> bool:
+        return edge_counts.get(name, 0) > 0
+
+    has_dti = has_relation("drug__targets__gene")
+    has_dg = has_relation("disease__associated_with__gene")
+    has_gg = has_relation("gene__interacts__gene")
+    has_dd = has_relation("drug__treats__disease")
+
+    active_high_order_paths: List[str] = []
+    if has_dti and has_dg:
+        active_high_order_paths.append("Drug-Protein-Disease")
+    if has_dg:
+        active_high_order_paths.append("Disease-Protein-Disease")
+    if has_dg and has_gg:
+        active_high_order_paths.append("Disease-Protein-Protein-Disease")
+
+    missing_prerequisites: List[str] = []
+    if not has_dti:
+        missing_prerequisites.append("drug__targets__gene")
+    if not has_dg:
+        missing_prerequisites.append("disease__associated_with__gene")
+    if not has_gg:
+        missing_prerequisites.append("gene__interacts__gene")
+
+    return {
+        "edge_counts": edge_counts,
+        "low_order_views": {
+            "required_relations": [
+                "drug__targets__gene",
+                "disease__associated_with__gene",
+                "drug__treats__disease",
+            ],
+            "active_relations": [
+                relation
+                for relation in [
+                    "drug__targets__gene",
+                    "disease__associated_with__gene",
+                    "drug__treats__disease",
+                ]
+                if has_relation(relation)
+            ],
+            "complete": has_dti and has_dg and has_dd,
+        },
+        "high_order_views": {
+            "implemented_paths": [
+                "Drug-Protein-Disease",
+                "Disease-Protein-Disease",
+                "Disease-Protein-Protein-Disease",
+            ],
+            "active_paths": active_high_order_paths,
+            "complete": has_dti and has_dg and has_gg,
+            "missing_prerequisites": missing_prerequisites,
+            "note": (
+                "Disease-Protein-Protein-Disease requires gene__interacts__gene. "
+                "Without gene network edges, the model stays in partial high-order mode."
+            ),
+        },
+    }
+
+
 def build_final_graph(paths: ProjectPaths) -> Dict[str, Any]:
     drug_feat = load_json_dict(paths.processed / "drug_features_dict.json")
     disease_feat = load_json_dict(paths.processed / "disease_features_dict.json")
@@ -1455,8 +1522,6 @@ def build_final_graph(paths: ProjectPaths) -> Dict[str, Any]:
             graph["edge_weight"]["gene__interacts__gene"] = torch.cat([weight_tensor, weight_tensor], dim=0)
             graph["metadata"]["gene__interacts__gene"] = {"source": "string_or_humannet"}
 
-    torch.save(graph, paths.final / "final_graph_data.pt")
-
     try:
         from torch_geometric.data import HeteroData  # type: ignore
 
@@ -1474,6 +1539,8 @@ def build_final_graph(paths: ProjectPaths) -> Dict[str, Any]:
     except Exception as exc:
         graph["metadata"]["pyg_export"] = f"skipped: {exc}"
 
+    graph["metadata"]["coverage"] = summarize_graph_coverage(graph)
+    torch.save(graph, paths.final / "final_graph_data.pt")
     return graph
 
 
@@ -1519,6 +1586,21 @@ def validate_outputs(paths: ProjectPaths) -> Dict[str, Any]:
     g_path = paths.processed / "DiSimNet_G.json"
     if g_path.exists():
         report["DiSimNet_G_method"] = read_json(g_path).get("metadata", {}).get("method")
+
+    final_graph_path = paths.final / "final_graph_data.pt"
+    if final_graph_path.exists():
+        try:
+            graph = torch.load(final_graph_path, map_location="cpu")
+            coverage = graph.get("metadata", {}).get("coverage", {})
+            if coverage:
+                report["graph_coverage"] = coverage
+                high_order = coverage.get("high_order_views", {})
+                if not high_order.get("complete", False):
+                    report["warnings"].append(
+                        "High-order view is only partially active; complete Disease-Protein-Protein-Disease needs gene_network_edges.csv."
+                    )
+        except Exception as exc:
+            report["warnings"].append(f"failed to inspect final_graph_data.pt: {exc}")
 
     write_json(paths.reports / "validation_report.json", report)
     return report

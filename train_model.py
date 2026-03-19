@@ -192,6 +192,48 @@ def save_json(path: Path, payload: Dict) -> None:
         json.dump(payload, f, indent=2, ensure_ascii=False)
 
 
+def summarize_high_order_views(relation_edges: Dict[str, torch.Tensor], meta_edges: Dict[str, torch.Tensor]) -> Dict[str, object]:
+    def has_relation(name: str) -> bool:
+        edge_index = relation_edges.get(name)
+        return edge_index is not None and edge_index.numel() > 0
+
+    has_dti = has_relation("drug__targets__gene")
+    has_dg = has_relation("disease__associated_with__gene")
+    has_gg = has_relation("gene__interacts__gene")
+
+    active_paths: List[str] = []
+    if "drug__meta_dgd__disease" in meta_edges:
+        active_paths.append("Drug-Protein-Disease")
+    if "disease__meta_dgd__disease" in meta_edges:
+        active_paths.append("Disease-Protein-Disease")
+    if "disease__meta_dggd__disease" in meta_edges:
+        active_paths.append("Disease-Protein-Protein-Disease")
+
+    missing_prerequisites: List[str] = []
+    if not has_dti:
+        missing_prerequisites.append("drug__targets__gene")
+    if not has_dg:
+        missing_prerequisites.append("disease__associated_with__gene")
+    if not has_gg:
+        missing_prerequisites.append("gene__interacts__gene")
+
+    return {
+        "implemented_paths": [
+            "Drug-Protein-Disease",
+            "Disease-Protein-Disease",
+            "Disease-Protein-Protein-Disease",
+        ],
+        "active_paths": active_paths,
+        "complete": has_dti and has_dg and has_gg,
+        "missing_prerequisites": missing_prerequisites,
+        "active_metapath_relations": list(meta_edges.keys()),
+        "note": (
+            "Disease-Protein-Protein-Disease depends on gene__interacts__gene. "
+            "If that relation is absent, training uses partial high-order views."
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train the project-local simplified MSRHGNN model.")
     parser.add_argument("--graph", type=str, default="data/final/final_graph_data.pt")
@@ -270,6 +312,7 @@ def main() -> None:
     )
     relation_edges_cpu.update(meta_edges)
     relation_weights_cpu.update(meta_weights)
+    high_order_views = summarize_high_order_views(relation_edges_cpu, meta_edges)
 
     relation_edges = {k: v.to(device) for k, v in relation_edges_cpu.items()}
     relation_weights = {k: w.to(device) for k, w in relation_weights_cpu.items()}
@@ -389,6 +432,7 @@ def main() -> None:
         "num_test_pos": len(test_pairs),
         "device": str(device),
         "metapath_relations": list(meta_edges.keys()),
+        "high_order_views": high_order_views,
     }
     save_json(out_dir / "summary.json", summary)
     save_json(out_dir / "history.json", {"history": history})

@@ -246,6 +246,7 @@ def main() -> None:
         "final_dir": str(paths.final),
         "reports_dir": str(paths.reports),
         "warnings": report.get("warnings", []),
+        "graph_coverage": report.get("graph_coverage", {}),
         "reference_merge": reference_report,
         "reference_pt_merge": reference_pt_report,
     }

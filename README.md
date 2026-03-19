@@ -1,19 +1,23 @@
 # Biology-guided Multi-view Semantic- and Relation-aware Heterogeneous Graph Neural Network for Drug-Disease Association Prediction
 
-## 1. 当前目录下保留的核心文件
+## 1. 项目文件
 
-- `run.py`：主流程入口
-- `pipeline_utils.py`：数据处理、相似矩阵构建、异构图构建、参考资产并入
-- `msrhgnn_model.py`：模型主体
-- `train_model.py`：训练入口
+主流程只依赖以下文件：
+
+- `run.py`：数据处理与最终图构建入口
+- `pipeline_utils.py`：数据处理、相似度构建、图构建工具函数
+- `msrhgnn_model.py`：MSRHGNN 风格主模型
+- `train_model.py`：训练与评估脚本
+- `predict_candidates.py`：给指定疾病输出候选药物 Top-K
 - `requirements.txt`：依赖列表
+- `data/`：数据、处理结果、报告
+- `artifacts/`：训练结果与预测结果
+- `others/`：历史文件，不参与主流程
 
-参考目录中真正需要的资产已经迁移到主目录：
+已并入主流程的参考资产：
 
 - `data/reference_graph_builder/processed.zip`
 - `data/reference_graph_builder/final_hetero_data_raw.pt`
-
-所以当前项目已经可以独立运行。
 
 ---
 
@@ -28,7 +32,7 @@
 
 ---
 
-## 3. 环境安装命令
+## 3. 安装步骤
 
 ### 3.1 创建虚拟环境
 
@@ -42,112 +46,180 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ---
 
-## 4. 主流程做什么
+## 4. 数据构建
 
-`run.py` 会完成这些事：
+### 4.1 构建主流程数据
 
-1. 读取当前目录下原始数据
-2. 构建 drug / disease / gene 特征
-3. 构建 3 个 drug similarity view
-4. 构建 3 个 disease similarity view
-5. 构建 drug-target-gene / disease-gene 等异构关系
-6. 自动并入 `data/reference_graph_builder/processed.zip`
-7. 自动尝试并入 `data/reference_graph_builder/final_hetero_data_raw.pt`
-8. 生成最终图：
-   - `data/final/final_graph_data.pt`
-
----
-
-## 5. 当前模型结构
-
-`msrhgnn_model.py` 已按你给的要求实现。
-
-### Step 1：多源相似矩阵
-
-#### Disease 3 views
-- `disease__disimnet_o__disease`
-- `disease__disimnet_h__disease`
-- `disease__disimnet_g__disease`
-
-#### Drug 3 views
-- `drug__drugsim_morgan__drug`
-- `drug__drugsim_gip__drug`
-- `drug__drugsim_drsie__drug`
-
-### Step 2：自适应融合 + Graph Transformer
-
-每个视图：
-
-- 先过 `WeightedGINLayer`
-- 再过 `MultiPoolAdaptiveFusion`
-  - GAP
-  - GMP
-  - GSP
-- 再过 `SparseGraphTransformerLayer`
-
-### Step 3：异构视图
-
-#### Low-order
-- drug-target-gene
-- disease-gene
-- train drug-disease
-
-#### High-order
-- Drug-Protein-Disease
-- Disease-Protein-Disease
-- Disease-Protein-Protein-Disease
-
-### Step 4：Gate + Concat + Bilinear
-
-- gate 融合局部/全局异构特征
-- similarity view 与 heterogeneous view 拼接
-- bilinear decoder 输出 drug-disease score
-
----
-
-## 6. 如何运行
-
-### 6.1 先构图
-
-推荐先跑：
+如果当前没有 STRING / HumanNet 原始网络文件，先运行：
 
 ```bash
 python run.py --skip-gene-network
 ```
 
-说明：
+这一步会完成：
 
-- `--skip-gene-network`：跳过从超大 STRING 原始文件重新构边
-- 即使跳过，主流程仍会自动读取：
-  - `data/reference_graph_builder/processed.zip`
-  - `data/reference_graph_builder/final_hetero_data_raw.pt`
+1. DrugBank 药物解析
+2. drug / disease / gene 特征构建
+3. 3 个 drug similarity views 构建
+4. 3 个 disease similarity views 构建
+5. drug-target-gene / disease-gene 关系构建
+6. 参考 `processed.zip` / `final_hetero_data_raw.pt` 中可用内容合并
+7. 最终异构图导出
 
-### 6.2 查看构图报告
+核心输出：
 
-重点看：
+- `data/final/final_graph_data.pt`
 
-- `data/reports/validation_report.json`
-- `data/reports/reference_processed_report.json`
-- `data/reports/reference_pt_report.json`
-- `data/reports/run_summary.json`
+### 4.2 如果要补齐完整高阶视图
 
-### 6.3 训练
+需要额外提供：
 
-#### 冒烟测试
+- `data/processed/gene_network_edges.csv`
+
+格式至少包含三列：
+
+- `gene1`
+- `gene2`
+- `weight`
+
+只要这个文件存在并且非空，主流程会自动并入：
+
+- `gene__interacts__gene`
+- Disease-Protein-Protein-Disease 高阶路径
+
+如果没有该文件，代码可以运行，但高阶视图是**部分实现**。
+
+---
+
+## 5. 模型结构
+
+`msrhgnn_model.py` 当前实现包括：
+
+### 5.1 相似性视图
+
+#### Disease 3 views
+
+- `disease__disimnet_o__disease`
+- `disease__disimnet_h__disease`
+- `disease__disimnet_g__disease`
+
+#### Drug 3 views
+
+- `drug__drugsim_morgan__drug`
+- `drug__drugsim_gip__drug`
+- `drug__drugsim_drsie__drug`
+
+### 5.2 视图编码
+
+- `WeightedGINLayer`
+- `MultiPoolAdaptiveFusion`
+  - GAP
+  - GMP
+  - GSP
+- `SparseGraphTransformerLayer`
+
+### 5.3 异构关系建模
+
+#### Low-order
+
+- drug-target-gene
+- disease-gene
+- train-only drug-disease
+
+#### High-order
+
+- Drug-Protein-Disease
+- Disease-Protein-Disease
+- Disease-Protein-Protein-Disease
+
+### 5.4 输出层
+
+- gate fusion
+- concat
+- bilinear decoder
+
+### 5.5 已修复的问题
+
+训练阶段已修复标签泄露：
+
+- `DrugSim_GIP`
+- `DrugSim_DRSIE`
+
+这两个关系会在训练时基于 **train split** 动态重建，而不是直接用全量正样本构图。
+
+---
+
+## 6. 训练
+
+### 6.1 冒烟测试
+
 ```bash
 python train_model.py --graph data/final/final_graph_data.pt --epochs 1 --eval-every 1 --out-dir artifacts/smoke_test
 ```
 
-#### 正式训练
+### 6.2 正常训练
+
 ```bash
 python train_model.py --graph data/final/final_graph_data.pt --epochs 100 --hidden-dim 128 --lr 1e-3 --dropout 0.2 --out-dir artifacts/train_run
 ```
 
+训练输出：
+
+- `artifacts/train_run/model.pt`
+- `artifacts/train_run/summary.json`
+- `artifacts/train_run/history.json`
+
 ---
 
-## 7. 输出文件
+## 7. 候选药物预测
 
-### 构图输出
+新增脚本：`predict_candidates.py`
+
+作用：
+
+- 加载训练好的模型
+- 复用训练时的 train-only GIP / DRSIE 重建逻辑
+- 重建 metapath 关系
+- 针对指定疾病输出 Top-K 候选药物
+- 默认排除已知 drug-disease 关联，只保留新候选药物
+
+### 7.1 示例：输出 Alzheimer Disease 的前 10 个候选药物
+
+```bash
+python predict_candidates.py --disease "Alzheimer Disease" --top-k 10 --out artifacts/predictions/alz_top10.csv
+```
+
+### 7.2 指定模型文件
+
+```bash
+python predict_candidates.py --model artifacts/train_run/model.pt --disease "Alzheimer Disease" --top-k 10 --out artifacts/predictions/alz_top10.csv
+```
+
+### 7.3 按 DiseaseID 查询
+
+```bash
+python predict_candidates.py --disease MESH:D000544 --top-k 10 --out artifacts/predictions/alz_top10.csv
+```
+
+### 7.4 输出列
+
+输出 CSV 包含：
+
+- `rank`
+- `drugbank_id`
+- `drug_name`
+- `disease_id`
+- `disease_name`
+- `score`
+- `logit`
+- `num_target_genes`
+- `target_genes`
+
+---
+
+## 8. 结果文件
+
+### 8.1 数据与图
 
 - `data/processed/`
 - `data/final/final_graph_data.pt`
@@ -156,28 +228,44 @@ python train_model.py --graph data/final/final_graph_data.pt --epochs 100 --hidd
 - `data/reports/reference_pt_report.json`
 - `data/reports/run_summary.json`
 
-### 训练输出
+### 8.2 训练结果
 
 - `artifacts/train_run/model.pt`
 - `artifacts/train_run/summary.json`
 - `artifacts/train_run/history.json`
 
----
+### 8.3 候选药物预测结果
 
-## 8. 当前已知边界
-
-1. **OMIM 原始文本缺失**
-   - 当前用 CTD disease text / definition 替代
-
-2. **`string_edges.csv` 当前为空**
-   - 所以目前不会得到有效的 `gene_network_edges.csv`
-
-3. **如果没装 `torch_geometric`**
-   - 主流程无法真正读取 `final_hetero_data_raw.pt`
+- `artifacts/predictions/*.csv`
 
 ---
 
-## 9. 推荐直接执行的完整命令
+## 9. 当前边界
+
+1. OMIM 当前由 CTD 文本替代，能跑通，但语义来源不是完全等价。
+2. 现有 `processed.zip` 与 `final_hetero_data_raw.pt` 不包含 `gene__interacts__gene`。
+3. 因此，仅靠现有 pt / zip 资产，**不能自动补齐完整 PPI 高阶分支**。
+4. 当前代码已经把完整高阶逻辑写好；真正缺的是可用的 gene-gene / PPI 数据。
+5. 没有 `gene_network_edges.csv` 时，模型仍可训练，但属于**部分高阶视图版本**。
+
+---
+
+## 10. 如何检查当前状态
+
+重点看两个文件：
+
+- `data/reports/validation_report.json`
+- `artifacts/train_run/summary.json`
+
+现在会明确给出：
+
+- high-order 是否 complete
+- 缺的是不是 `gene__interacts__gene`
+- 当前激活了哪些 metapath relations
+
+---
+
+## 11. 从环境到预测的一条完整流程
 
 ```bash
 python -m venv .venv
@@ -186,26 +274,7 @@ python -m pip install --upgrade pip
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
 pip install torch-geometric
-pip install transformers
 python run.py --skip-gene-network
 python train_model.py --graph data/final/final_graph_data.pt --epochs 100 --hidden-dim 128 --lr 1e-3 --dropout 0.2 --out-dir artifacts/train_run
+python predict_candidates.py --model artifacts/train_run/model.pt --disease "Alzheimer Disease" --top-k 10 --out artifacts/predictions/alz_top10.csv
 ```
-
----
-
-## 10. 最终结论
-
-现在这个项目目录已经是一个独立可运行版本：
-
-- 不再依赖已删除的参考目录
-- 运行时要用的参考资产已经迁移到：
-  - `data/reference_graph_builder/`
-
-你现在只需要：
-
-1. 配环境
-2. 装依赖
-3. 跑 `run.py`
-4. 跑 `train_model.py`
-
-即可。

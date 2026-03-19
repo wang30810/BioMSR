@@ -205,29 +205,30 @@ def build_metapath_relations(
     dg = relation_edges.get(LOCAL_DG_RELATION)
     gg = relation_edges.get(GENE_NETWORK_RELATION)
     gg_w = relation_weights.get(GENE_NETWORK_RELATION)
-    if dti is None or dg is None or dti.numel() == 0 or dg.numel() == 0:
+    if dg is None or dg.numel() == 0:
         return new_edges, new_weights
 
-    drug_to_genes = build_lookup(dti)
     disease_to_genes = build_lookup(dg)
     gene_neighbors = build_weighted_lookup(gg, gg_w) if gg is not None and gg.numel() else {}
 
-    drug_rows: List[int] = []
-    drug_cols: List[int] = []
-    drug_vals: List[float] = []
-    for drug_idx, drug_genes in drug_to_genes.items():
-        for disease_idx, disease_genes in disease_to_genes.items():
-            shared = len(drug_genes & disease_genes)
-            interaction = best_cross_gene_score(drug_genes, disease_genes, gene_neighbors)
-            score = float(shared) + interaction
-            if score > 0:
-                drug_rows.append(drug_idx)
-                drug_cols.append(disease_idx)
-                drug_vals.append(score)
-    edge_index, edge_weight = topk_sparse_edges(drug_rows, drug_cols, drug_vals, num_src=num_drugs, num_dst=num_diseases, top_k=top_k)
-    if edge_index.numel() > 0:
-        new_edges[META_DRUG_DISEASE_RELATION] = edge_index
-        new_weights[META_DRUG_DISEASE_RELATION] = edge_weight
+    if dti is not None and dti.numel() > 0:
+        drug_to_genes = build_lookup(dti)
+        drug_rows: List[int] = []
+        drug_cols: List[int] = []
+        drug_vals: List[float] = []
+        for drug_idx, drug_genes in drug_to_genes.items():
+            for disease_idx, disease_genes in disease_to_genes.items():
+                shared = len(drug_genes & disease_genes)
+                interaction = best_cross_gene_score(drug_genes, disease_genes, gene_neighbors)
+                score = float(shared) + interaction
+                if score > 0:
+                    drug_rows.append(drug_idx)
+                    drug_cols.append(disease_idx)
+                    drug_vals.append(score)
+        edge_index, edge_weight = topk_sparse_edges(drug_rows, drug_cols, drug_vals, num_src=num_drugs, num_dst=num_diseases, top_k=top_k)
+        if edge_index.numel() > 0:
+            new_edges[META_DRUG_DISEASE_RELATION] = edge_index
+            new_weights[META_DRUG_DISEASE_RELATION] = edge_weight
 
     dis_rows: List[int] = []
     dis_cols: List[int] = []
