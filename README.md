@@ -236,7 +236,6 @@ python train_model.py --graph data/final/final_graph_data.pt --epochs 100 --hidd
 ## 9. 推荐直接执行的完整命令
 
 ```bash
-cd E:\2023\校创2025\模型
 python -m venv .venv
 .venv\Scripts\activate
 python -m pip install --upgrade pip
