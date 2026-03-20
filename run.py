@@ -41,6 +41,7 @@ DEFAULT_FOCUS_KEYWORDS = [
     "huntington",
     "epilepsy",
 ]
+UNSAFE_DISEASE_SIM_METHODS = {"shared_drug_jaccard_fallback"}
 
 
 def require_path(sources: dict, key: str) -> Path:
@@ -52,6 +53,17 @@ def require_path(sources: dict, key: str) -> Path:
 
 def outputs_exist(*paths: Path) -> bool:
     return all(path.exists() for path in paths)
+
+
+def load_similarity_method(path: Path) -> str:
+    if not path.exists():
+        return ""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except Exception:
+        return ""
+    return str((payload.get("metadata") or {}).get("method") or "")
 
 
 def main() -> None:
@@ -205,15 +217,22 @@ def main() -> None:
         )
     else:
         print("  skip: DiSimNet_H.json already exists")
-    if args.force or not outputs_exist(paths.processed / "DiSimNet_G.json"):
+    disimnet_g_path = paths.processed / "DiSimNet_G.json"
+    disimnet_g_method = load_similarity_method(disimnet_g_path)
+    unsafe_disimnet_g = disimnet_g_method in UNSAFE_DISEASE_SIM_METHODS
+    rebuilt_disimnet_g = False
+    if args.force or unsafe_disimnet_g or not outputs_exist(disimnet_g_path):
+        if unsafe_disimnet_g:
+            print(f"  rebuild: DiSimNet_G.json uses unsafe method {disimnet_g_method}")
         build_disease_similarity_g(
             paths.interim / "target_disease_ids.txt",
             paths.processed / "drug_disease_edges.csv",
-            paths.processed / "DiSimNet_G.json",
+            disimnet_g_path,
             args.top_k,
             disease_gene_edges_path=paths.processed / "disease_gene_edges.csv" if (paths.processed / "disease_gene_edges.csv").exists() else None,
             gene_network_edges_path=paths.processed / "gene_network_edges.csv" if (paths.processed / "gene_network_edges.csv").exists() else None,
         )
+        rebuilt_disimnet_g = True
     else:
         print("  skip: DiSimNet_G.json already exists")
 
@@ -233,7 +252,12 @@ def main() -> None:
             print("  no reference processed results found")
 
     print("\n[9/10] Build final heterogeneous graph")
-    need_rebuild_final = args.force or bool(reference_report.get("integrated")) or not outputs_exist(paths.final / "final_graph_data.pt")
+    need_rebuild_final = (
+        args.force
+        or rebuilt_disimnet_g
+        or bool(reference_report.get("integrated"))
+        or not outputs_exist(paths.final / "final_graph_data.pt")
+    )
     if need_rebuild_final:
         build_final_graph(paths)
     else:

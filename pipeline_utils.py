@@ -1142,19 +1142,18 @@ def build_disease_similarity_g(
         save_similarity(ids, sparse, save_path, top_k, {"method": "shared_gene_jaccard_fallback"})
         return
 
-    edges = pd.read_csv(drug_disease_edges_path)
-    disease_to_drugs = edges.groupby("DiseaseID")["drugbank_id"].apply(lambda s: set(map(str, s))).to_dict() if len(edges) else {}
-    sim = np.zeros((len(ids), len(ids)), dtype=float)
-    for i, di in enumerate(ids):
-        set_i = disease_to_drugs.get(di, set())
-        for j in range(i, len(ids)):
-            set_j = disease_to_drugs.get(ids[j], set())
-            union = set_i | set_j
-            score = len(set_i & set_j) / len(union) if union else 0.0
-            sim[i, j] = sim[j, i] = score
-    sim = normalize_matrix(sim)
-    sparse = sparsify_top_k(sim, k=top_k, symmetric=True)
-    save_similarity(ids, sparse, save_path, top_k, {"method": "shared_drug_jaccard_fallback"})
+    # Do not fall back to full drug-disease edges here: that would encode
+    # label information from the entire dataset into a disease similarity view.
+    save_similarity(
+        ids,
+        np.zeros((len(ids), len(ids)), dtype=float),
+        save_path,
+        top_k,
+        {
+            "method": "disabled_missing_disease_gene_edges",
+            "note": "Drug-disease fallback removed to prevent label leakage.",
+        },
+    )
 
 
 def integrate_reference_processed_results(paths: ProjectPaths, root: Path, top_k: int = 5) -> Dict[str, Any]:
@@ -1570,7 +1569,7 @@ def validate_outputs(paths: ProjectPaths) -> Dict[str, Any]:
 
     if not (paths.processed / "disease_gene_edges.csv").exists():
         report["warnings"].append(
-            "disease_gene_edges.csv not found; DiSimNet_G uses fallback and heterogeneous graph lacks disease-gene edges."
+            "disease_gene_edges.csv not found; DiSimNet_G is disabled to avoid label leakage and heterogeneous graph lacks disease-gene edges."
         )
     if not (paths.processed / "gene_network_edges.csv").exists():
         report["warnings"].append(
@@ -1585,12 +1584,22 @@ def validate_outputs(paths: ProjectPaths) -> Dict[str, Any]:
 
     g_path = paths.processed / "DiSimNet_G.json"
     if g_path.exists():
-        report["DiSimNet_G_method"] = read_json(g_path).get("metadata", {}).get("method")
+        g_method = read_json(g_path).get("metadata", {}).get("method")
+        report["DiSimNet_G_method"] = g_method
+        if g_method == "shared_drug_jaccard_fallback":
+            report["warnings"].append(
+                "Unsafe DiSimNet_G detected: shared_drug_jaccard_fallback leaks labels via full drug-disease edges."
+            )
 
     final_graph_path = paths.final / "final_graph_data.pt"
     if final_graph_path.exists():
         try:
             graph = torch.load(final_graph_path, map_location="cpu")
+            graph_g_method = graph.get("metadata", {}).get("disease__disimnet_g__disease", {}).get("method")
+            if graph_g_method == "shared_drug_jaccard_fallback":
+                report["warnings"].append(
+                    "Unsafe final_graph_data.pt detected: disease__disimnet_g__disease was built from shared_drug_jaccard_fallback."
+                )
             coverage = graph.get("metadata", {}).get("coverage", {})
             if coverage:
                 report["graph_coverage"] = coverage

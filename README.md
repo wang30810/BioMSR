@@ -144,8 +144,10 @@ python run.py --skip-gene-network
 
 - `DrugSim_GIP`
 - `DrugSim_DRSIE`
+- `DiSimNet_G` 的 `shared_drug_jaccard_fallback`
 
-这两个关系会在训练时基于 **train split** 动态重建，而不是直接用全量正样本构图。
+前两个关系会在训练时基于 **train split** 动态重建，而不是直接用全量正样本构图。
+当缺失 `disease_gene_edges.csv` 时，`DiSimNet_G` 现在会安全禁用，不再回退到基于全量 `drug_disease_edges.csv` 的相似图。
 
 ---
 

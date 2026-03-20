@@ -21,6 +21,7 @@ from msrhgnn_model import (
 
 DRUGSIM_GIP_RELATION = "drug__drugsim_gip__drug"
 DRUGSIM_DRSIE_RELATION = "drug__drugsim_drsie__drug"
+UNSAFE_DISEASE_SIM_METHODS = {"shared_drug_jaccard_fallback"}
 
 
 def set_seed(seed: int) -> None:
@@ -257,6 +258,13 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     graph = torch.load(args.graph, map_location="cpu")
+    disease_g_method = graph.get("metadata", {}).get("disease__disimnet_g__disease", {}).get("method")
+    if disease_g_method in UNSAFE_DISEASE_SIM_METHODS:
+        raise RuntimeError(
+            "Unsafe graph detected: disease__disimnet_g__disease uses "
+            f"{disease_g_method}, which leaks labels via full drug-disease edges. "
+            "Rebuild the graph with the updated pipeline before training."
+        )
     drug_x = graph["node_features"]["drug"].float().to(device)
     disease_x = graph["node_features"]["disease"].float().to(device)
     gene_x = graph["node_features"]["gene"].float().to(device)
